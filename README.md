@@ -1,16 +1,24 @@
 # @clawnitor/plugin
 
-OpenClaw plugin for Clawnitor — agent monitoring, alerting, and kill switch.
+[![npm](https://img.shields.io/npm/v/@clawnitor/plugin?color=FF6B4A)](https://www.npmjs.com/package/@clawnitor/plugin)
+[![license](https://img.shields.io/badge/license-AGPL--3.0-A78BFA)](LICENSE)
 
-## Installation
+Agent monitoring, rules enforcement, and kill switch for OpenClaw. Blocks dangerous actions **before** they execute.
+
+## Why
+
+Prompt-level safety instructions are fragile — they get dropped during context compaction, ignored by the model, or overridden by conflicting instructions. Clawnitor enforces rules at the architecture level via `before_tool_call`. Context compaction can't drop it because it's not in the context.
+
+## Install
 
 ```bash
 openclaw plugins install @clawnitor/plugin
+npx clawnitor init
 ```
 
-## Configuration
+`clawnitor init` handles authentication, API key generation, and config in one command.
 
-Add to your `openclaw.json`:
+**Or manually:** sign up at [clawnitor.io](https://clawnitor.io), copy your API key, and add to `openclaw.json`:
 
 ```json
 {
@@ -26,35 +34,86 @@ Add to your `openclaw.json`:
 }
 ```
 
-### Options
+Get your API key at [clawnitor.io](https://clawnitor.io). Events appear on your dashboard immediately.
+
+## What it captures
+
+| Event | Hook | Details |
+|-------|------|---------|
+| Tool calls | `before_tool_call` / `after_tool_call` | Name, params, result, duration. **Can block.** |
+| LLM requests | `llm_input` / `llm_output` | Model, tokens, cost |
+| Messages | `message_sending` / `message_sent` / `message_received` | Content (redacted). **Can block sends.** |
+| Lifecycle | `session_start` / `session_end` / `agent_end` | Session tracking |
+| Sub-agents | `subagent_spawning` / `subagent_ended` | Coordination tracking |
+
+## Pre-action defense (3 layers + auto-kill)
+
+Every tool call and message is checked **before execution**:
+
+1. **Kill state** — server-triggered pause via WebSocket. Kill from anywhere — dashboard, API, any device.
+2. **Local failsafe** — spend circuit breaker, rate limiter, tool blocklist. Always active, even offline.
+3. **Cached rules** — your server-side rules fetched every 60s, evaluated locally. Keyword, rate, threshold — all pre-action.
+
+**Auto-kill:** If an agent triggers 3+ rule violations within a configurable time window (default: 10 minutes), Clawnitor automatically kills it. No manual intervention needed. Configurable per agent.
+
+If any layer triggers, the action is blocked in-process. Zero network latency.
+
+```
+// Agent tries to run: bash("rm -rf /app/data")
+// Clawnitor intercepts via before_tool_call:
+
+BLOCKED by Clawnitor
+  Rule matched: keyword "rm -rf"
+  Action stopped before execution
+
+// After 3 violations in 10 minutes:
+AUTO-KILLED by Clawnitor
+  3 violations in 8 minutes (threshold: 3)
+  Agent fully stopped. Resume from dashboard when ready.
+```
+
+## Configuration
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `apiKey` | required | Your Clawnitor API key |
+| `apiKey` | **required** | Your Clawnitor API key (starts with `clw_live_`) |
 | `backendUrl` | `https://api.clawnitor.io` | Backend URL |
-| `spendLimit` | `100` | Max spend per session ($) before auto-pause |
+| `spendLimit` | `100` | Session spend limit in USD before auto-pause |
 | `rateLimit` | `120` | Max tool calls per minute before auto-pause |
-| `toolBlocklist` | `[]` | Tool names to always block |
+| `toolBlocklist` | `[]` | Tool names to always block (case-insensitive) |
 | `redactionPatterns` | `[]` | Additional regex patterns for secret redaction |
 
-## What it monitors
+### Full example
 
-- Tool calls (before and after execution)
-- LLM requests (input/output, token usage, cost)
-- Messages (sending, sent, received)
-- Session lifecycle (start, end, agent completion)
-- Sub-agent spawning and completion
-
-## Safety features
-
-- **Kill switch** — blocks tool calls and messages when agent is paused (server or local)
-- **Spend circuit breaker** — auto-pauses at configurable spend limit
-- **Rate limiter** — auto-pauses at configurable tool call rate
-- **Tool blocklist** — prevents specific tools from ever executing
-- **Secret redaction** — strips API keys, passwords, tokens from logged data
+```json
+{
+  "plugins": {
+    "entries": {
+      "clawnitor": {
+        "config": {
+          "apiKey": "clw_live_abc123",
+          "spendLimit": 50,
+          "rateLimit": 60,
+          "toolBlocklist": ["execute_bash", "delete_file"],
+          "redactionPatterns": ["sk-[a-zA-Z0-9]{32}"]
+        }
+      }
+    }
+  }
+}
+```
 
 ## Privacy
 
-Event data streams to the Clawnitor backend for monitoring. Sensitive data (API keys, passwords, tokens) is automatically redacted before transmission. Data sharing for aggregate pattern improvement is opt-in (default OFF).
+Sensitive data (API keys, passwords, tokens) is automatically redacted before transmission. 25+ built-in patterns plus your custom `redactionPatterns`. Data sharing for aggregate pattern improvement is opt-in and **off by default**.
 
-Learn more at https://clawnitor.io
+## Links
+
+- [Live demo](https://clawnitor.io/demo) — see it in action, no signup
+- [Documentation](https://clawnitor.io/docs) — full reference
+- [Dashboard](https://app.clawnitor.io) — sign up and monitor
+- [Main repo](https://github.com/davidkny22/clawnitor) — backend + dashboard source
+
+## License
+
+[AGPL-3.0](LICENSE)
