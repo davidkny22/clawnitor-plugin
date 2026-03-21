@@ -8,7 +8,7 @@ By submitting a pull request or otherwise contributing to this project, you agre
 
 - **"You"** means the individual or legal entity submitting a Contribution.
 - **"Contribution"** means any code, documentation, or other material submitted to this project via pull request, patch, issue, or any other mechanism.
-- **"Project Owner"** means David Kogan / Safer Intelligence Labs.
+- **"Project Owner"** means Clawnitor Inc., a subsidiary of Safer Intelligence Labs.
 
 ## 2. Grant of Rights
 
