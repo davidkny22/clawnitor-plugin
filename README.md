@@ -1,7 +1,7 @@
 # @clawnitor/plugin
 
 [![npm](https://img.shields.io/npm/v/@clawnitor/plugin?color=FF6B4A)](https://www.npmjs.com/package/@clawnitor/plugin)
-[![license](https://img.shields.io/badge/license-AGPL--3.0-A78BFA)](LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-A78BFA)](LICENSE)
 
 Agent monitoring, rules enforcement, and kill switch for OpenClaw. Blocks dangerous actions **before** they execute.
 
@@ -44,7 +44,7 @@ Get your API key at [clawnitor.io](https://clawnitor.io). Events appear on your 
 | LLM requests | `llm_input` / `llm_output` | Model, tokens, cost |
 | Messages | `message_sending` / `message_sent` / `message_received` | Content (redacted). **Can block sends.** |
 | Lifecycle | `session_start` / `session_end` / `agent_end` | Session tracking |
-| Sub-agents | `subagent_spawning` / `subagent_ended` | Coordination tracking |
+| Sub-agents | `subagent_spawning` / `subagent_ended` | Subagent ID attribution, parent-child tracking |
 
 ## Pre-action defense (3 layers + auto-kill)
 
@@ -52,7 +52,7 @@ Every tool call and message is checked **before execution**:
 
 1. **Kill state** — server-triggered pause via WebSocket. Kill from anywhere — dashboard, API, any device.
 2. **Local failsafe** — spend circuit breaker, rate limiter, tool blocklist. Always active, even offline.
-3. **Cached rules** — your server-side rules fetched every 60s, evaluated locally. Keyword, rate, threshold — all pre-action.
+3. **Cached rules** — your server-side rules fetched every 60s, evaluated locally. Keyword, rate, threshold — all pre-action. Each rule is configured to **block**, **alert**, or **both** — alert-only rules let the action proceed and notify you instead.
 
 **Auto-kill:** If an agent triggers 3+ rule violations within a configurable time window (default: 10 minutes), Clawnitor automatically kills it. No manual intervention needed. Configurable per agent.
 
@@ -103,6 +103,15 @@ AUTO-KILLED by Clawnitor
 }
 ```
 
+## Dashboard features powered by this plugin
+
+All captured events feed into the Clawnitor dashboard at [app.clawnitor.io](https://app.clawnitor.io):
+
+- **Cost tracking** — per-agent spend breakdowns, 7-day trend charts, most expensive calls ranked
+- **Decision traces** — visual session timelines showing every tool call in order, with cost and model attribution
+- **Subagent tracking** — parent-child relationships visible in session timelines via subagent_id attribution
+- **Saves counter** — tracks every time Clawnitor blocked a harmful action
+
 ## Privacy
 
 Sensitive data (API keys, passwords, tokens) is automatically redacted before transmission. 25+ built-in patterns plus your custom `redactionPatterns`. Data sharing for aggregate pattern improvement is opt-in and **off by default**.
@@ -116,4 +125,4 @@ Sensitive data (API keys, passwords, tokens) is automatically redacted before tr
 
 ## License
 
-[AGPL-3.0](LICENSE)
+[MIT](LICENSE)
