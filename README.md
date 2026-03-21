@@ -123,6 +123,10 @@ Sensitive data (API keys, passwords, tokens) is automatically redacted before tr
 - [Dashboard](https://app.clawnitor.io) — sign up and monitor
 - [Main repo](https://github.com/davidkny22/clawnitor) — backend + dashboard source
 
+## Contributing
+
+Contributions are welcome. By opening a pull request, you agree to the [Contributor License Agreement](https://github.com/davidkny22/clawnitor/blob/main/CLA.md).
+
 ## License
 
 [MIT](LICENSE)
